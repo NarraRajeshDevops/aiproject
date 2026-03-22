@@ -1,27 +1,27 @@
 pipeline {
-    agent any   // Run on any available agent
+    agent any
     environment {
         SOURCE_REPO = 'https://github.com/NarraRajeshDevops/aiproject.git'
         TARGET_REPO = 'https://github.com/NarraRajeshDevops/aiproject-destination.git'
-        GIT_CREDENTIALS_ID = 'jenkins'
-        WORKSPACE_SOURCE = 'source_repo'
-        WORKSPACE_TARGET = 'target_repo'
+        GIT_CREDENTIALS_ID = 'jenkins'  // Replace with your Jenkins credential ID
+        SOURCE_DIR = 'source_repo'
+        TARGET_DIR = 'target_repo'
     }
     stages {
 
         stage('Clean Workspace') {
             steps {
                 echo 'Cleaning workspace...'
-                deleteDir() // clean everything to avoid conflicts
+                deleteDir() // start fresh
             }
         }
 
         stage('Checkout Source Repo') {
             steps {
-                echo "Checking out source repo..."
-                dir("${WORKSPACE_SOURCE}") {
-                    git branch: 'main', 
-                        url: "${SOURCE_REPO}", 
+                echo "Cloning source repo..."
+                dir("${SOURCE_DIR}") {
+                    git branch: 'main',
+                        url: "${SOURCE_REPO}",
                         credentialsId: "${GIT_CREDENTIALS_ID}"
                 }
             }
@@ -29,40 +29,47 @@ pipeline {
 
         stage('Prepare Target Repo') {
             steps {
-                echo "Cloning target repo..."
-                dir("${WORKSPACE_TARGET}") {
-                    git branch: 'main', 
-                        url: "${TARGET_REPO}", 
-                        credentialsId: "${GIT_CREDENTIALS_ID}"
+                script {
+                    // If target folder exists locally, just pull updates
+                    if (fileExists("${TARGET_DIR}/.git")) {
+                        echo "Target repo exists locally, pulling latest changes..."
+                        dir("${TARGET_DIR}") {
+                            bat """
+                                git checkout main
+                                git pull origin main
+                            """
+                        }
+                    } else {
+                        echo "Target repo does not exist locally, cloning..."
+                        dir("${TARGET_DIR}") {
+                            git branch: 'main',
+                                url: "${TARGET_REPO}",
+                                credentialsId: "${GIT_CREDENTIALS_ID}"
+                        }
+                    }
                 }
             }
         }
 
-        stage('Copy Code') {
+        stage('Copy Source to Target') {
             steps {
                 echo "Copying code from source to target..."
-                // copy all files except .git from source to target
-                sh """
-                rsync -av --exclude='.git' ${WORKSPACE_SOURCE}/ ${WORKSPACE_TARGET}/
+                bat """
+                    xcopy /E /Y /I ${SOURCE_DIR}\\* ${TARGET_DIR}\\
+                    del ${TARGET_DIR}\\.git /Q /S || echo "Keep .git folder"
                 """
-                // for Windows agent, use xcopy instead
-                // bat 'xcopy /E /Y /I ${WORKSPACE_SOURCE}\\* ${WORKSPACE_TARGET}\\'
             }
         }
 
-        stage('Commit and Push') {
+        stage('Commit & Push') {
             steps {
-                dir("${WORKSPACE_TARGET}") {
-                    echo "Adding, committing, and pushing changes..."
-                    sh '''
-                    git add .
-                    git commit -m "Jenkins: Copy code from source repo"
-                    git push origin main
-                    '''
-                    // For Windows:
-                    // bat 'git add .'
-                    // bat 'git commit -m "Jenkins: Copy code from source repo"'
-                    // bat 'git push origin main'
+                dir("${TARGET_DIR}") {
+                    echo "Committing and pushing changes..."
+                    bat """
+                        git add .
+                        git commit -m "Jenkins: Copy/Update code from source repo" || echo "Nothing to commit"
+                        git push origin main
+                    """
                 }
             }
         }
@@ -73,7 +80,7 @@ pipeline {
             echo 'Pipeline finished.'
         }
         success {
-            echo 'Code copied successfully!'
+            echo 'Code copied/updated successfully!'
         }
         failure {
             echo 'Pipeline failed. Check logs.'
