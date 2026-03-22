@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'NodeJS'   // configure in Jenkins tools
+        nodejs 'NodeJs'   // configure in Jenkins tools
     }
 
     stages {
