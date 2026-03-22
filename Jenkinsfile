@@ -3,7 +3,7 @@ pipeline {
     environment {
         SOURCE_REPO = 'https://github.com/NarraRajeshDevops/aiproject.git'
         TARGET_REPO = 'https://github.com/NarraRajeshDevops/aiproject-destination.git'
-        GIT_CREDENTIALS_ID = 'jenkins'  // Replace with your Jenkins credential ID
+        GIT_CREDENTIALS_ID = 'Jenkinskey'  // Replace with your Jenkins credential ID
         SOURCE_DIR = 'source_repo'
         TARGET_DIR = 'target_repo'
     }
