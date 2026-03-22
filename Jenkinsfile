@@ -43,7 +43,7 @@ pipeline {
                         echo "Target repo does not exist locally, cloning..."
                         dir("${TARGET_DIR}") {
                            git branch: 'main',
-                            url: 'git@github.com:NarraRajeshDevops/aiproject-destination.git',
+                            url: 'git@github.com:NarraRajeshDevops/aiproject.git',
                             credentialsId: 'Jenkinskey'
                         }
                     }
